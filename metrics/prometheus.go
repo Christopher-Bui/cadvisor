@@ -34,6 +34,8 @@ type infoProvider interface {
 	GetVersionInfo() (*info.VersionInfo, error)
 	// GetMachineInfo provides information about the machine.
 	GetMachineInfo() (*info.MachineInfo, error)
+	// GetDockerInfo provides information about docker.
+	GetDockerInfo() (*info.DockerStatus, error)
 }
 
 // metricValue describes a single metric value for a given set of label values
@@ -617,6 +619,7 @@ var (
 	versionInfoDesc       = prometheus.NewDesc("cadvisor_version_info", "A metric with a constant '1' value labeled by kernel version, OS version, docker version, cadvisor version & cadvisor revision.", []string{"kernelVersion", "osVersion", "dockerVersion", "cadvisorVersion", "cadvisorRevision"}, nil)
 	machineInfoCoresDesc  = prometheus.NewDesc("machine_cpu_cores", "Number of CPU cores on the machine.", nil, nil)
 	machineInfoMemoryDesc = prometheus.NewDesc("machine_memory_bytes", "Amount of memory installed on the machine.", nil, nil)
+	dockerInfoDesc = prometheus.NewDesc("docker_info", "Docker Info", nil, nil)
 )
 
 // Describe describes all the metrics ever exported by cadvisor. It
@@ -638,6 +641,7 @@ func (c *PrometheusCollector) Collect(ch chan<- prometheus.Metric) {
 	c.collectMachineInfo(ch)
 	c.collectVersionInfo(ch)
 	c.collectContainersInfo(ch)
+	c.collectDockerInfo(ch)
 	c.errors.Collect(ch)
 }
 
@@ -732,6 +736,16 @@ func (c *PrometheusCollector) collectVersionInfo(ch chan<- prometheus.Metric) {
 		return
 	}
 	ch <- prometheus.MustNewConstMetric(versionInfoDesc, prometheus.GaugeValue, 1, []string{versionInfo.KernelVersion, versionInfo.ContainerOsVersion, versionInfo.DockerVersion, versionInfo.CadvisorVersion, versionInfo.CadvisorRevision}...)
+}
+
+func (c *PrometheusCollector) collectDockerInfo(ch chan<- prometheus.Metric) {
+	dockerInfo, err := c.infoProvider.GetDockerInfo()
+	if err != nil {
+		c.errors.Set(1)
+		glog.Warningf("Couldn't get docker info: %s", err)
+		return
+	}
+	ch <- prometheus.MustNewConstMetric(dockerInfoDesc, prometheus.GaugeValue, float64(dockerInfo.NumImages))
 }
 
 func (c *PrometheusCollector) collectMachineInfo(ch chan<- prometheus.Metric) {

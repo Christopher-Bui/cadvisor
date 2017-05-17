@@ -101,6 +101,9 @@ type Manager interface {
 	// Get version information about different components we depend on.
 	GetVersionInfo() (*info.VersionInfo, error)
 
+	// Get information about docker
+	GetDockerInfo() (*info.DockerStatus, error)
+
 	// Get filesystem information for the filesystem that contains the given directory
 	GetDirFsInfo(dir string) (v2.FsInfo, error)
 
@@ -202,6 +205,12 @@ func New(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, maxHousekeepingIn
 		return nil, err
 	}
 	glog.Infof("Version: %+v", *versionInfo)
+
+	dockerInfo, err := getDockerInfo()
+	if err != nil {
+		return nil, err
+	}
+	glog.Infof("Docker: %+v", *dockerInfo)
 
 	newManager.eventHandler = events.NewEventManager(parseEventsStoragePolicy())
 	return newManager, nil
@@ -740,6 +749,10 @@ func (m *manager) GetVersionInfo() (*info.VersionInfo, error) {
 	return getVersionInfo()
 }
 
+func (m *manager) GetDockerInfo() (*info.DockerStatus, error) {
+	return getDockerInfo()
+}
+
 func (m *manager) Exists(containerName string) bool {
 	m.containersLock.Lock()
 	defer m.containersLock.Unlock()
@@ -1264,6 +1277,25 @@ func getVersionInfo() (*info.VersionInfo, error) {
 		DockerAPIVersion:   docker_api_version,
 		CadvisorVersion:    version.Info["version"],
 		CadvisorRevision:   version.Info["revision"],
+	}, nil
+}
+
+func getDockerInfo() (*info.DockerStatus, error) {
+	var driverStatus map[string]string
+	driverStatus = make(map[string]string)
+
+	return &info.DockerStatus{
+		Version: "1",
+		APIVersion: "1",
+		KernelVersion: "1",
+		OS: "1",
+		Hostname: "1",
+		RootDir: "1",
+		Driver: "1",
+		DriverStatus: driverStatus,
+		ExecDriver: "1",
+		NumImages: 1,
+		NumContainers: 1,
 	}, nil
 }
 
