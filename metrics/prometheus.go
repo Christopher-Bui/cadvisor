@@ -745,6 +745,8 @@ func (c *PrometheusCollector) collectDockerInfo(ch chan<- prometheus.Metric) {
 		glog.Warningf("Couldn't get docker info: %s", err)
 		return
 	}
+
+	fmt.Printf("Driver Status: %+v\n!", dockerInfo.DriverStatus)
 	ch <- prometheus.MustNewConstMetric(dockerInfoDesc, prometheus.GaugeValue, float64(dockerInfo.NumImages))
 }
 

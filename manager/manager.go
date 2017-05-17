@@ -1284,6 +1284,16 @@ func getDockerInfo() (*info.DockerStatus, error) {
 	var driverStatus map[string]string
 	driverStatus = make(map[string]string)
 
+	status, err := docker.Status()
+
+	if err != nil {
+		// Handle it better?
+		glog.Errorf("failed to get docker status: %v", err)
+	}
+
+	numImages := status.NumImages
+	driverStatus = status.DriverStatus
+
 	return &info.DockerStatus{
 		Version: "1",
 		APIVersion: "1",
@@ -1294,7 +1304,7 @@ func getDockerInfo() (*info.DockerStatus, error) {
 		Driver: "1",
 		DriverStatus: driverStatus,
 		ExecDriver: "1",
-		NumImages: 1,
+		NumImages: numImages,
 		NumContainers: 1,
 	}, nil
 }
